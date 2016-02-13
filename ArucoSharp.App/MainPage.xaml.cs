@@ -1,42 +1,29 @@
-﻿using ArucoSharp.App.Aruco;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading.Tasks;
 using VideoEffectComponent;
 using Windows.Devices.Enumeration;
-using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Display;
-using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Media.Capture;
 using Windows.Media.Effects;
-using Windows.Storage;
-using Windows.Storage.Pickers;
-using Windows.Storage.Streams;
+using Windows.Media.MediaProperties;
 using Windows.System.Display;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Media.Imaging;
-using Windows.UI.Xaml.Navigation;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace ArucoSharp.App
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
-    public sealed partial class MainPage : Page
+	/// <summary>
+	/// An empty page that can be used on its own or navigated to within a Frame.
+	/// </summary>
+	public sealed partial class MainPage : Page
 	{ 
 		// Receive notifications about rotation of the UI and apply any necessary rotation to the preview stream
 		private readonly DisplayInformation _displayInformation = DisplayInformation.GetForCurrentView();
@@ -216,11 +203,26 @@ namespace ArucoSharp.App
 				rotationDegrees = (360 - rotationDegrees) % 360;
 			}
 
+			var t = _mediaCapture.VideoDeviceController.GetAvailableMediaStreamProperties(MediaStreamType.VideoPreview);
+			uint min = 2000;
+			VideoEncodingProperties minResolution = null;
+			for (int i = 0; i < t.Count; i++)
+			{
+				var prop = (VideoEncodingProperties)t[i];
+				if(prop.Width < min && prop.Width > 600)
+				{
+					minResolution = prop;
+					min = prop.Width;
+				}
+			}
+
 			// Add rotation metadata to the preview stream to make sure the aspect ratio / dimensions match when rendering and getting preview frames
 			var props = _mediaCapture.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);
 			props.Properties.Add(RotationKey, rotationDegrees);
 			await _mediaCapture.SetEncodingPropertiesAsync(MediaStreamType.VideoPreview, props, null);
+			await _mediaCapture.VideoDeviceController.SetMediaStreamPropertiesAsync(MediaStreamType.VideoPreview, minResolution);
 		}
+
 
 		private async Task StopPreviewAsync()
 		{

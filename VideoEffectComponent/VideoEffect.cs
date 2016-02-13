@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using VideoEffectLibrary;
 using Windows.Foundation.Collections;
 using Windows.Graphics.DirectX.Direct3D11;
@@ -77,6 +78,7 @@ namespace VideoEffectComponent
 
 		public void ProcessFrame(ProcessVideoFrameContext context)
 		{
+			var sw = Stopwatch.StartNew();
 			if (context.InputFrame.SoftwareBitmap == null)
 				return;
 
@@ -87,6 +89,7 @@ namespace VideoEffectComponent
 			cv.Treshold = (double)_configuration["tolerance"];
 			cv.Recognize();
 			softwarebitmap.CopyTo(context.OutputFrame.SoftwareBitmap);
+			sw.Stop();
 		}
 		IPropertySet _configuration;
 
