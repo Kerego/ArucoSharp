@@ -11,9 +11,11 @@
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"></RowDefinition>
 			<RowDefinition Height="Auto"></RowDefinition>
+			<RowDefinition Height="Auto"></RowDefinition>
 		</Grid.RowDefinitions>
 		<CaptureElement Name="PreviewControl" Stretch="Uniform" />
-		<Slider Name="ToleranceSlider" Grid.Row="1" Value="0.5" Maximum="1" HorizontalAlignment="Stretch" StepFrequency="0.01" ValueChanged="ToleranceSlider_ValueChanged"></Slider>
+		<TextBlock Grid.Row="1" Name="Result" Height="100"></TextBlock>
+		<Slider Name="ToleranceSlider" Grid.Row="2" Value="0.5" Maximum="1" HorizontalAlignment="Stretch" StepFrequency="0.01" ValueChanged="ToleranceSlider_ValueChanged"></Slider>
 		<!--<Image x:Name="TestImage"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"></Image>-->
     </Grid>
 </Page>

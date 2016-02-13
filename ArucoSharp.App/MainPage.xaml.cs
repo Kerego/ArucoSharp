@@ -58,32 +58,18 @@ namespace ArucoSharp.App
 
 		private async void PageLoaded(object sender, RoutedEventArgs e)
 		{
-			//FileOpenPicker picker = new FileOpenPicker();
-			//picker.FileTypeFilter.Add(".png");
-			//picker.FileTypeFilter.Add(".jpg");
-
-			//var item = await picker.PickSingleFileAsync();
-			//SoftwareBitmap bitmap = null;
-			//using (IRandomAccessStream stream = await item.OpenAsync(FileAccessMode.ReadWrite))
-			//{
-			//	if (stream != null)
-			//	{
-			//		BitmapDecoder decoder = await BitmapDecoder.CreateAsync(stream);
-
-			//		// Get the SoftwareBitmap representation of the file
-			//		bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-			//		CV cv = new CV(bitmap);
-			//		cv.ToGreyScale();
-			//		cv.ToTreshold();
-			//	}
-			//}
-			//var sbs = new SoftwareBitmapSource();
-			//await sbs.SetBitmapAsync(bitmap);
-			//TestImage.Source = sbs;
 			_displayOrientation = _displayInformation.CurrentOrientation;
 			await InitializeCameraAsync();
 			propertySet["tolerance"] = 0.5;
 			await _mediaCapture.AddVideoEffectAsync(new VideoEffectDefinition(typeof(TresholdVideoEffect).FullName, propertySet), MediaStreamType.VideoPreview);
+			var timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(2000) };
+			timer.Tick += (s, agrs) =>
+			{
+				if (propertySet.ContainsKey("result"))
+					Result.Text = propertySet["result"].ToString() + Environment.NewLine + propertySet["result"].ToString().Length;
+			};
+			timer.Start();
+
 		}
 
 		private async Task StartPreviewAsync()

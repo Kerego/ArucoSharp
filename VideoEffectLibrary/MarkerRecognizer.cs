@@ -3,12 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
 using Windows.Graphics.Imaging;
-using Windows.UI.Xaml.Media.Imaging;
 
 
 namespace VideoEffectLibrary
@@ -22,8 +18,7 @@ namespace VideoEffectLibrary
 		{
 			void GetBuffer(out byte* buffer, out uint capacity);
 		}
-
-		unsafe delegate void PixelAction(int bytes, byte* ptr, BitmapPlaneDescription desc);
+		
 		SoftwareBitmap _image;
 
 		#region ctor
@@ -32,8 +27,8 @@ namespace VideoEffectLibrary
 		private bool[,] _binary;
 		private int _width;
 		private int _height;
-		private int _DistanceInRadiusesH = 6;
-		private int _DistanceInRadiusesV = 6;
+		private int _DistanceInRadiusesH = 4;
+		private int _DistanceInRadiusesV = 3;
 
 		public MarkerRecognizer(SoftwareBitmap image)
 		{
@@ -42,14 +37,14 @@ namespace VideoEffectLibrary
 
 		#endregion
 
-		unsafe public void Recognize()
+		unsafe public string Recognize()
 		{
-			PreparePixels(GreyscaleProcess);
+			return PreparePixels();
 		}
 
-		unsafe void PreparePixels(PixelAction action)
+		unsafe string PreparePixels()
 		{
-			var stopwatch = Stopwatch.StartNew();
+			var result = string.Empty;
 			// Effect is hard-coded to operate on BGRA8 format only
 			if (_image.BitmapPixelFormat == BitmapPixelFormat.Bgra8)
 			{
@@ -72,15 +67,14 @@ namespace VideoEffectLibrary
 						_height = desc.Height;
 
 						// Iterate over all pixels
-						action(BYTES_PER_PIXEL, data, desc);
+						result = GreyscaleProcess(BYTES_PER_PIXEL, data, desc);
 					}
 				}
 			}
-
-			stopwatch.Stop();
+			return result;
 		}
 
-		private unsafe void GreyscaleProcess(int BYTES_PER_PIXEL, byte* data, BitmapPlaneDescription desc)
+		private unsafe string GreyscaleProcess(int BYTES_PER_PIXEL, byte* data, BitmapPlaneDescription desc)
 		{
 			_binary = new bool[desc.Width, desc.Height];
 			for (int row = 0; row < desc.Height; row++)
@@ -125,11 +119,11 @@ namespace VideoEffectLibrary
 				}
 			}
 
-			Detect(data, desc);
+			return Detect(data, desc);
 			//Sobel(BYTES_PER_PIXEL, data, desc);
 		}
 
-		private unsafe void Detect(byte* data, BitmapPlaneDescription desc)
+		private unsafe string Detect(byte* data, BitmapPlaneDescription desc)
 		{
 			LinkedList<Circle> circles = new LinkedList<Circle>();
 			
@@ -139,9 +133,7 @@ namespace VideoEffectLibrary
 				{
 					if(_binary[x, y] == true)
 					{
-						var sw = Stopwatch.StartNew();
 						var result = Search(x, y);
-						sw.Stop();
 						if (result.HasValue)
 							circles.AddLast(result.Value);
 					}
@@ -162,7 +154,7 @@ namespace VideoEffectLibrary
 					}
 			}
 			if (circles.Count == 0)
-				return;
+				return string.Empty;
 
 			double avgRadius = circles.Sum(x => x.Radius) / circles.Count;
 			var first = circles.OrderBy(x => x.Position.X).First();
@@ -174,8 +166,6 @@ namespace VideoEffectLibrary
 			double maxX = circles.Max(x => x.Position.X);
 			double minX = circles.Min(x => x.Position.X);
 
-
-
 			var horizontalCount = (int)Math.Round(((maxX - minX) / avgRadius / _DistanceInRadiusesH + 1));
 			var verticalCount = (int)Math.Round(((maxY - minY) / avgRadius / _DistanceInRadiusesV + 1));
 
@@ -185,21 +175,24 @@ namespace VideoEffectLibrary
 			{
 				var h = (int)Math.Round((circle.Position.X - minX) / avgRadius / _DistanceInRadiusesH);
 				var v = (int)Math.Round((circle.Position.Y - minY) / avgRadius / _DistanceInRadiusesV);
-				matrix[v, h] = -1;
+
+				if(h < horizontalCount && v < verticalCount)
+					matrix[v, horizontalCount - h - 1] = -1;
 			}
 
 			//output
 
-			//var s = string.Empty;
-			//for (int i = 0; i < matrix.GetLength(0); i++)
-			//{
-			//	for (int j = 0; j < matrix.GetLength(1); j++)
-			//	{
-			//		s += matrix[i, j];
-			//	}
-			//	s += Environment.NewLine;
-			//}
-			//Debug.WriteLine(s);
+			var s = string.Empty;
+			for (int i = 0; i < matrix.GetLength(0); i++)
+			{
+				for (int j = 0; j < matrix.GetLength(1); j++)
+				{
+					s += matrix[i, j];
+				}
+				s += Environment.NewLine;
+			}
+			Debug.WriteLine(s);
+			return s;
 		}
 
 		private unsafe void DrawLineX(int x, int y, int count, byte* data, BitmapPlaneDescription desc)
@@ -286,32 +279,43 @@ namespace VideoEffectLibrary
 			}
 
 			//remove
-			ClearObject(x, y);
+			var center = ClearObject(x, y);
 
 			if (verLength < 20)
 				return null;
 
 			return new Circle	{
-									Position = new Point
-									{
-										X = x,
-										Y = y + verLength / 2
-									},
+									Position = center,
 									Radius = verLength / 2
 								};
 		}
 
-		private void ClearObject(int x, int y)
+		private Point ClearObject(int x, int y)
 		{
 
 			var queue = new Queue<Point>();
 
 			queue.Enqueue(new Point { X = x, Y = y });
+			int minY = int.MaxValue;
+			int minX = int.MaxValue;
+			int maxX = 0;
+			int maxY = 0;
 
 			Point pt;
+
 			while(queue.Any())
 			{
 				var point = queue.Dequeue();
+
+				if (point.X > maxX)
+					maxX = point.X;
+				if (point.X < minX)
+					minX = point.X;
+				if (point.Y > maxY)
+					maxY = point.Y;
+				if (point.Y < minY)
+					minY = point.Y;
+
 				_binary[point.X, point.Y] = false;
 				//neighbourhood
 				for(int i = -1; i <= 1; i++)
@@ -327,6 +331,7 @@ namespace VideoEffectLibrary
 						}
 					}
 			}
+			return new Point { X = (maxX + minX) / 2, Y = (maxY + minY) / 2 };
 		}
 
 		//private unsafe void Sobel(int BYTES_PER_PIXEL, byte* data, BitmapPlaneDescription desc)

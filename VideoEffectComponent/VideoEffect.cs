@@ -87,7 +87,8 @@ namespace VideoEffectComponent
 
 			MarkerRecognizer cv = new MarkerRecognizer(softwarebitmap);
 			cv.Treshold = (double)_configuration["tolerance"];
-			cv.Recognize();
+			var result = cv.Recognize();
+			_configuration["result"] = result;
 			softwarebitmap.CopyTo(context.OutputFrame.SoftwareBitmap);
 			sw.Stop();
 		}
