@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using VideoEffectComponent;
+using VideoEffectLibrary;
 using Windows.Devices.Enumeration;
 using Windows.Foundation.Collections;
 using Windows.Graphics.Display;
@@ -10,11 +12,14 @@ using Windows.Media;
 using Windows.Media.Capture;
 using Windows.Media.Effects;
 using Windows.Media.MediaProperties;
+using Windows.Storage;
 using Windows.System.Display;
+using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Media;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -60,16 +65,57 @@ namespace ArucoSharp.App
 		{
 			_displayOrientation = _displayInformation.CurrentOrientation;
 			await InitializeCameraAsync();
-			propertySet["tolerance"] = 0.5;
+			StorageFile sf = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///wordlist.txt", UriKind.Absolute));
+			var _words = await FileIO.ReadLinesAsync(sf);
+			propertySet["tolerance"] = 0.78;
+			propertySet["hue"] = 320;
+			propertySet["dictionary"] = _words;
 			await _mediaCapture.AddVideoEffectAsync(new VideoEffectDefinition(typeof(TresholdVideoEffect).FullName, propertySet), MediaStreamType.VideoPreview);
-			var timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(2000) };
+			var timer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(400) };
+			var textblockes = new List<TextBlock>();
 			timer.Tick += (s, agrs) =>
 			{
+				List<Point> centers = new List<Point>();
 				if (propertySet.ContainsKey("result"))
-					Result.Text = propertySet["result"].ToString() + Environment.NewLine + propertySet["result"].ToString().Length;
+					Result.Text = propertySet["result"].ToString();
+				if (propertySet.ContainsKey("centers"))
+					centers = propertySet["centers"] as List<Point>;
+				centers = centers.ToList();
+				if (!centers.Any())
+					return;
+				if (textblockes.Count == centers.Count)
+				{
+					for (int i = 0; i < centers.Count; i++)
+					{
+						textblockes[i].Margin = new Thickness(0, centers[i].Y, centers[i].X, 0);
+					}
+				}
+				else
+				{
+					foreach(TextBlock text in textblockes)
+					{
+						canvas.Children.Remove(text);
+					}
+
+					textblockes.Clear();
+
+					for (int i = 0; i < centers.Count; i++)
+					{
+						var textblock = new TextBlock
+						{
+							Text = i.ToString(),
+							Foreground = new SolidColorBrush(Colors.White),
+							FontSize = 24,
+							Margin = new Thickness(0, centers[i].Y, centers[i].X, 0)
+						};
+						canvas.Children.Add(textblock);
+						textblockes.Add(textblock);
+					}
+				}
+
+
 			};
 			timer.Start();
-
 		}
 
 		private async Task StartPreviewAsync()
@@ -285,7 +331,9 @@ namespace ArucoSharp.App
 
 		private void ToleranceSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
 		{
-			propertySet["tolerance"] = e.NewValue;
+			propertySet["tolerance"] = ToleranceSlider.Value;
+			if(HueSlider != null)
+				propertySet["hue"] = (int)HueSlider.Value;
 		}
 	}
 }

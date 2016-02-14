@@ -12,10 +12,16 @@
 			<RowDefinition Height="*"></RowDefinition>
 			<RowDefinition Height="Auto"></RowDefinition>
 			<RowDefinition Height="Auto"></RowDefinition>
+			<RowDefinition Height="Auto"></RowDefinition>
 		</Grid.RowDefinitions>
-		<CaptureElement Name="PreviewControl" Stretch="Uniform" />
+		<Canvas x:Name="canvas" HorizontalAlignment="Center" VerticalAlignment="Center" Width="640" Height="480">
+			<CaptureElement Name="PreviewControl" Stretch="Uniform" Width="640" Height="480"/>
+			<TextBlock Margin ="300, 200, 0, 0" Text="Aleni1"></TextBlock>
+			<TextBlock Margin ="300, 200, 300, 0" Text="Aleni2"></TextBlock>
+		</Canvas>
 		<TextBlock Grid.Row="1" Name="Result" Height="100"></TextBlock>
-		<Slider Name="ToleranceSlider" Grid.Row="2" Value="0.5" Maximum="1" HorizontalAlignment="Stretch" StepFrequency="0.01" ValueChanged="ToleranceSlider_ValueChanged"></Slider>
+		<Slider Name="ToleranceSlider" Grid.Row="2" Value="0.88" Maximum="1" HorizontalAlignment="Stretch" StepFrequency="0.01" ValueChanged="ToleranceSlider_ValueChanged"></Slider>
+		<Slider Name="HueSlider" Grid.Row="3" Value="306" Maximum="360" HorizontalAlignment="Stretch" StepFrequency="1" ValueChanged="ToleranceSlider_ValueChanged"></Slider>
 		<!--<Image x:Name="TestImage"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"></Image>-->
     </Grid>
 </Page>

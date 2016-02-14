@@ -112,6 +112,10 @@
     <Compile Include="VideoEffect.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CrosswordSolver\CrosswordSolver.csproj">
+      <Project>{c4ca1c58-a7a9-4a17-98d8-e29469788099}</Project>
+      <Name>CrosswordSolver</Name>
+    </ProjectReference>
     <ProjectReference Include="..\VideoEffectLibrary\VideoEffectLibrary.csproj">
       <Project>{ff30c60a-570a-491a-a600-b8103579f286}</Project>
       <Name>VideoEffectLibrary</Name>
